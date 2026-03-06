@@ -1,54 +1,61 @@
 <?php
-include "../config/database.php";
+include "database.php";
 session_start();
 
 $email_error = false;
 $password_error = false;
 $signup_error = "";
 
-if($_SERVER["REQUEST_METHOD"]=="POST"){
-    if(isset($_POST['login'])){
-        $email = $_POST["email"];
-        $password = $_POST["password"];
+// Login
+if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST['login'])){
+    $email = $_POST["email"];
+    $password = $_POST["password"];
 
+    $stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if(!$user){
+        $email_error = true;
+    } else if(!password_verify($password, $user['password'])){
+        $password_error = true;
+    } else {
+        $_SESSION["user_id"] = $user["id"];
+        $_SESSION["user_name"] = $user["nom"];
+        $_SESSION["user_role"] = $user["role"];
+        header("Location: dashboard.php");
+        exit();
+    }
+}
+
+// Sign Up
+if($_SERVER["REQUEST_METHOD"]=="POST" && isset($_POST['signup'])){
+    $nom = $_POST["signup_nom"];
+    $email = $_POST["signup_email"];
+    $password = $_POST["signup_password"];
+    $confirm = $_POST["signup_confirm"];
+
+    if($password !== $confirm){
+        $signup_error = "Les mots de passe ne correspondent pas";
+    } else {
+        // vérifier si email existe
         $stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
         $stmt->execute([$email]);
-        $user = $stmt->fetch();
-
-        if(!$user){
-            $email_error = true;
-        } else if($user['password'] != $password){
-            $password_error = true;
+        if($stmt->fetch()){
+            $signup_error = "Email déjà utilisé";
         } else {
-            $_SESSION["user_id"] = $user["id"];
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("INSERT INTO users (nom,email,password,role) VALUES (?,?,?,?)");
+            $stmt->execute([$nom, $email, $hash, 'user']);
+            $_SESSION["user_id"] = $conn->lastInsertId();
+            $_SESSION["user_name"] = $nom;
+            $_SESSION["user_role"] = 'user';
             header("Location: dashboard.php");
             exit();
-        }
-    } else if(isset($_POST['signup'])){
-        // Registration logic
-        $email = $_POST["signup_email"];
-        $password = $_POST["signup_password"];
-        $confirm = $_POST["signup_confirm"];
-
-        if($password !== $confirm){
-            $signup_error = "Les mots de passe ne correspondent pas";
-        } else {
-            $stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
-            $stmt->execute([$email]);
-            if($stmt->fetch()){
-                $signup_error = "Email déjà utilisé";
-            } else {
-                $stmt = $conn->prepare("INSERT INTO users (email,password) VALUES (?,?)");
-                $stmt->execute([$email, $password]);
-                $_SESSION["user_id"] = $conn->lastInsertId();
-                header("Location: dashboard.php");
-                exit();
-            }
         }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -58,18 +65,10 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-body {
-    display:flex; flex-direction:column; min-height:100vh;
-    font-family:Arial, Helvetica, sans-serif;
-    color:white; margin:0;
-    background: linear-gradient(rgba(15,23,42,0.6), rgba(30,58,95,0.6)), url("BACKGROUNDCMC.png");
-    background-size:cover; background-position:center; background-repeat:no-repeat;
-}
+body { display:flex; flex-direction:column; min-height:100vh; font-family:Arial, Helvetica, sans-serif; color:white; margin:0;
+background: linear-gradient(rgba(15,23,42,0.6), rgba(30,58,95,0.6)), url("BACKGROUNDCMC.png"); background-size:cover; background-position:center; }
 .login-container { flex:1; display:flex; justify-content:center; align-items:center; padding:20px; }
-.login-form {
-    background: rgba(255,255,255,0.05); padding:30px; border-radius:15px;
-    box-shadow:0 10px 25px rgba(0,0,0,0.3); width:100%; max-width:400px; text-align:center;
-}
+.login-form { background: rgba(255,255,255,0.05); padding:30px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.3); width:100%; max-width:400px; text-align:center; }
 .login-form h2 { margin-bottom:20px; color:#e0f7fa; }
 .login-form input { width:100%; padding:10px 15px; margin-bottom:15px; border-radius:5px; border:2px solid transparent; transition:0.3s; }
 .login-form input.error-border { border-color:#dc3545; }
@@ -79,7 +78,6 @@ body {
 .alert-error i { margin-right:8px; }
 @keyframes fadeIn { from {opacity:0; transform: translateY(-10px);} to {opacity:1; transform: translateY(0);} }
 .footer { position: fixed; bottom:0; left:0; width:100%; padding:15px 0; text-align:center; background:#0a1f2f; color: rgba(255,255,255,0.7); font-size:14px; border-top:1px solid rgba(255,255,255,0.2); border-radius:15px 15px 0 0; z-index:999; }
-/* Toggle Links */
 .toggle-link { color:#0d6efd; cursor:pointer; margin-top:10px; display:block; }
 #signup-form { display:none; }
 </style>
@@ -113,6 +111,7 @@ body {
 <?php if($signup_error) { ?>
     <div class="alert-error"><i class="fa fa-exclamation-triangle"></i> <?= $signup_error ?></div>
 <?php } ?>
+<input type="text" name="signup_nom" placeholder="Nom" required>
 <input type="email" name="signup_email" placeholder="Email" required>
 <input type="password" name="signup_password" placeholder="Password" required>
 <input type="password" name="signup_confirm" placeholder="Confirmer Password" required>
@@ -120,8 +119,13 @@ body {
 <span class="toggle-link" id="show-login">Déjà un compte ? Login</span>
 </form>
 
+</div>
+
+<div class="footer">
+© 2026 ResolveTech – Turning Problems into Solutions.
+</div>
+
 <script>
-// Toggle password visibility
 const togglePassword = document.querySelector('#togglePassword');
 const passwordField = document.querySelector('#password-field');
 togglePassword.addEventListener('click', function () {
@@ -130,7 +134,6 @@ togglePassword.addEventListener('click', function () {
     this.classList.toggle('fa-eye-slash');
 });
 
-// Toggle login/signup forms
 const showSignup = document.getElementById('show-signup');
 const showLogin = document.getElementById('show-login');
 const loginForm = document.getElementById('login-form');
@@ -140,10 +143,5 @@ showSignup.addEventListener('click', ()=>{ loginForm.style.display='none'; signu
 showLogin.addEventListener('click', ()=>{ signupForm.style.display='none'; loginForm.style.display='block'; });
 </script>
 
-</div>
-
-<div class="footer">
-© 2026 ResolveTech – Turning Problems into Solutions.
-</div>
 </body>
 </html>
