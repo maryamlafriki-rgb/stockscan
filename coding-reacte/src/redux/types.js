@@ -1,4 +1,0 @@
-export const ADD_ABSENCE ="ADD_ABSENCE"
-export const RESET_ABSENCES ="RESET_ABSENCES"
-export const TOGGLE_THEME ="TOGGLE_THEME"
-export const UPDATE_LEVEL ="UPDATE_LEVEL"
