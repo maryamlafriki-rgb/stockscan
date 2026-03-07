@@ -7,6 +7,7 @@ $password_error = false;
 $signup_error = "";
 
 if($_SERVER["REQUEST_METHOD"]=="POST"){
+
     if(isset($_POST['login'])){
         $email = $_POST["email"];
         $password = $_POST["password"];
@@ -24,8 +25,9 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
             header("Location: dashboard.php");
             exit();
         }
-    } else if(isset($_POST['signup'])){
-        // Registration logic
+    }
+
+    if(isset($_POST['signup'])){
         $email = $_POST["signup_email"];
         $password = $_POST["signup_password"];
         $confirm = $_POST["signup_confirm"];
@@ -33,13 +35,17 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
         if($password !== $confirm){
             $signup_error = "Les mots de passe ne correspondent pas";
         } else {
+
             $stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
             $stmt->execute([$email]);
+
             if($stmt->fetch()){
                 $signup_error = "Email déjà utilisé";
             } else {
+
                 $stmt = $conn->prepare("INSERT INTO users (email,password) VALUES (?,?)");
-                $stmt->execute([$email, $password]);
+                $stmt->execute([$email,$password]);
+
                 $_SESSION["user_id"] = $conn->lastInsertId();
                 header("Location: dashboard.php");
                 exit();
@@ -54,96 +60,219 @@ if($_SERVER["REQUEST_METHOD"]=="POST"){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login / Sign Up - StockScan</title>
+
+<title>StockScan</title>
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <style>
-body {
-    display:flex; flex-direction:column; min-height:100vh;
-    font-family:Arial, Helvetica, sans-serif;
-    color:white; margin:0;
-    background: linear-gradient(rgba(15,23,42,0.6), rgba(30,58,95,0.6)), url("BACKGROUNDCMC.png");
-    background-size:cover; background-position:center; background-repeat:no-repeat;
+
+body{
+display:flex;
+flex-direction:column;
+min-height:100vh;
+font-family:Arial;
+background:
+linear-gradient(rgba(15,23,42,0.6), rgba(30,58,95,0.6)),
+url("BACKGROUNDCMC.png");
+background-size:cover;
+background-position:center;
+color:white;
 }
-.login-container { flex:1; display:flex; justify-content:center; align-items:center; padding:20px; }
-.login-form {
-    background: rgba(255,255,255,0.05); padding:30px; border-radius:15px;
-    box-shadow:0 10px 25px rgba(0,0,0,0.3); width:100%; max-width:400px; text-align:center;
+
+.login-container{
+flex:1;
+display:flex;
+justify-content:center;
+align-items:center;
 }
-.login-form h2 { margin-bottom:20px; color:#e0f7fa; }
-.login-form input { width:100%; padding:10px 15px; margin-bottom:15px; border-radius:5px; border:2px solid transparent; transition:0.3s; }
-.login-form input.error-border { border-color:#dc3545; }
-.login-form button { width:100%; padding:10px; background:#0d6efd; border:none; color:white; font-weight:bold; border-radius:5px; transition:0.3s; }
-.login-form button:hover { background:#084298; }
-.alert-error { display:flex; align-items:center; justify-content:center; background:#dc3545; color:white; padding:10px 15px; border-radius:8px; margin-bottom:15px; animation: fadeIn 0.5s ease; }
-.alert-error i { margin-right:8px; }
-@keyframes fadeIn { from {opacity:0; transform: translateY(-10px);} to {opacity:1; transform: translateY(0);} }
-.footer { position: fixed; bottom:0; left:0; width:100%; padding:15px 0; text-align:center; background:#0a1f2f; color: rgba(255,255,255,0.7); font-size:14px; border-top:1px solid rgba(255,255,255,0.2); border-radius:15px 15px 0 0; z-index:999; }
-/* Toggle Links */
-.toggle-link { color:#0d6efd; cursor:pointer; margin-top:10px; display:block; }
-#signup-form { display:none; }
+
+.card-auth{
+background:rgba(255,255,255,0.05);
+padding:30px;
+border-radius:15px;
+width:400px;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* LABEL */
+
+.card-auth label{
+display:block;
+margin-bottom:6px;
+margin-top:10px;
+color:#e2e8f0;
+font-weight:500;
+transition:0.3s;
+}
+
+.card-auth label:hover{
+color:#38bdf8;
+}
+
+/* INPUT */
+
+.card-auth input{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+border-radius:6px;
+border:none;
+outline:none;
+transition:0.3s;
+}
+
+.card-auth input:focus{
+box-shadow:0 0 5px #38bdf8;
+}
+
+/* BUTTON */
+
+.card-auth button{
+width:100%;
+padding:10px;
+background:#0d6efd;
+border:none;
+border-radius:6px;
+color:white;
+font-weight:bold;
+margin-top:10px;
+}
+
+.nav-tabs .nav-link{
+color:white;
+}
+
+.nav-tabs .nav-link.active{
+background:#0d6efd;
+color:white;
+}
+
+/* AUTH TABS */
+
+.auth-tabs .nav-link{
+color:white;
+font-size:18px;
+margin:0 15px;
+background:none;
+border:none;
+text-decoration:underline;
+}
+
+.auth-tabs .nav-link.active{
+color:#38bdf8;
+font-weight:bold;
+}
+
+/* FOOTER */
+
+.footer{
+position:fixed;
+bottom:0;
+width:100%;
+text-align:center;
+padding:15px;
+background:#0a1f2f;
+}
+
 </style>
 </head>
+
 <body>
 
 <div class="login-container">
 
-<!-- LOGIN FORM -->
-<form method="POST" class="login-form" id="login-form">
-<h2>Login</h2>
+<div class="card-auth">
 
-<?php if($email_error) { ?>
-    <div class="alert-error"><i class="fa fa-exclamation-triangle"></i> Email incorrect</div>
-<?php } else if($password_error) { ?>
-    <div class="alert-error"><i class="fa fa-exclamation-triangle"></i> Mot de passe incorrect</div>
-<?php } ?>
+<ul class="nav justify-content-center auth-tabs">
 
-<input type="email" name="email" placeholder="Email" required class="<?php if($email_error) echo 'error-border'; ?>">
-<div style="position: relative;">
-<input type="password" name="password" placeholder="Password" required id="password-field">
-<i class="fa fa-eye" id="togglePassword" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); cursor:pointer; color:#0d6efd;"></i>
+<li class="nav-item">
+<a class="nav-link active" data-bs-toggle="tab" href="#login">Login</a>
+</li>
+
+<li class="nav-item">
+<a class="nav-link" data-bs-toggle="tab" href="#signup">Sign Up</a>
+</li>
+
+</ul>
+<div class="tab-content">
+
+<!-- LOGIN -->
+
+<div class="tab-pane fade show active" id="login">
+
+<?php if($email_error){ ?>
+
+<div class="alert alert-danger">
+Email incorrect
 </div>
-<button type="submit" name="login">Login</button>
-<span class="toggle-link" id="show-signup">Pas encore de compte ? S'inscrire</span>
-</form>
 
-<!-- SIGN UP FORM -->
-<form method="POST" class="login-form" id="signup-form">
-<h2>Sign Up</h2>
-<?php if($signup_error) { ?>
-    <div class="alert-error"><i class="fa fa-exclamation-triangle"></i> <?= $signup_error ?></div>
 <?php } ?>
-<input type="email" name="signup_email" placeholder="Email" required>
-<input type="password" name="signup_password" placeholder="Password" required>
-<input type="password" name="signup_confirm" placeholder="Confirmer Password" required>
-<button type="submit" name="signup">S'inscrire</button>
-<span class="toggle-link" id="show-login">Déjà un compte ? Login</span>
+
+<?php if($password_error){ ?>
+
+<div class="alert alert-danger">
+Mot de passe incorrect
+</div>
+
+<?php } ?>
+
+<form method="POST">
+
+<label>Email</label>
+<input type="email" name="email" required>
+
+<label>Password</label>
+<input type="password" name="password" required>
+
+<button type="submit" name="login">
+Login
+</button>
+
 </form>
 
-<script>
-// Toggle password visibility
-const togglePassword = document.querySelector('#togglePassword');
-const passwordField = document.querySelector('#password-field');
-togglePassword.addEventListener('click', function () {
-    const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordField.setAttribute('type', type);
-    this.classList.toggle('fa-eye-slash');
-});
+</div>
 
-// Toggle login/signup forms
-const showSignup = document.getElementById('show-signup');
-const showLogin = document.getElementById('show-login');
-const loginForm = document.getElementById('login-form');
-const signupForm = document.getElementById('signup-form');
+<!-- SIGN UP -->
 
-showSignup.addEventListener('click', ()=>{ loginForm.style.display='none'; signupForm.style.display='block'; });
-showLogin.addEventListener('click', ()=>{ signupForm.style.display='none'; loginForm.style.display='block'; });
-</script>
+<div class="tab-pane fade" id="signup">
+
+<?php if($signup_error){ ?>
+
+<div class="alert alert-danger">
+<?= $signup_error ?>
+</div>
+
+<?php } ?>
+
+<form method="POST">
+
+<input type="email" name="signup_email" placeholder="Email" required>
+
+<input type="password" name="signup_password" placeholder="Password" required>
+
+<input type="password" name="signup_confirm" placeholder="Confirm Password" required>
+
+<button type="submit" name="signup">
+Sign Up
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
 
 </div>
 
 <div class="footer">
 © 2026 ResolveTech – Turning Problems into Solutions.
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

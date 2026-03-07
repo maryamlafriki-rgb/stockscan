@@ -1,82 +1,113 @@
 <?php
-include "../includes/auth.php";
-include "../includes/header.php";
+include(__DIR__ . "/../config/database.php");
+
+$stmt = $conn->query("SELECT designation FROM articles");
+$articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
+<!DOCTYPE html>
+<html>
+<head>
+<title>StockScan</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
 <style>
-body, html {
-    height: 100%;
-    margin: 0;
-    font-family: 'Segoe UI', Arial, Helvetica, sans-serif;
-    background: linear-gradient(135deg,#0f172a,#1e3a5f);
-    color: #f1f5f9;
-    display: flex;
-    flex-direction: column;
+
+body{
+background: linear-gradient(135deg,#0f172a,#1e3a5f);
+color:white;
+font-family: Arial;
 }
 
-main {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px 20px;
+.add-article-container{
+max-width:500px;
+margin:auto;
+margin-top:80px;
+padding:30px;
+background:rgba(255,255,255,0.05);
+border-radius:10px;
 }
 
-.add-article-container {
-    width: 100%;
-    max-width: 500px;
-    padding: 35px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 15px;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+select,input{
+width:100%;
+padding:10px;
+margin-bottom:15px;
+border-radius:6px;
+border:none;
 }
 
-.add-article-container h2 {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 30px;
-    color: #38bdf8;
+button{
+width:100%;
+padding:10px;
+background:#0d6efd;
+color:white;
+border:none;
+border-radius:6px;
 }
 
-.add-article-container input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.3);
-    background: rgba(255,255,255,0.08);
-    color: #e0f7fa;
-}
-
-.add-article-container button {
-    width: 100%;
-    padding: 12px;
-    background: #0d6efd;
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: bold;
-}
 </style>
 
-<main>
+</head>
+
+<body>
+
 <div class="add-article-container">
 
-<h2>Ajouter Article</h2>
+<h2 class="text-center mb-4">Ajouter Article</h2>
 
 <form action="../actions/add_article.php" method="POST">
 
-<input type="text" name="code_barre" placeholder="Code Barre" required>
+<select name="designation" id="designation" onchange="checkArticle()" required>
 
-<input type="text" name="designation" placeholder="Designation" required>
+<option value="">-- Choisir un article --</option>
 
-<input type="number" name="quantite" placeholder="Quantité" required min="0">
+<option value="new">➕ Ajouter un nouvel article</option>
+
+<?php foreach($articles as $article): ?>
+
+<option value="<?= $article['designation']; ?>">
+<?= $article['designation']; ?>
+</option>
+
+<?php endforeach; ?>
+
+</select>
+
+
+<div id="newArticleFields" style="display:none;">
+
+<input type="text" name="new_designation" placeholder="Designation">
+
+<input type="text" name="code_barre" placeholder="Code Barre">
+
+</div>
+
+
+<input type="number" name="quantite" placeholder="Quantité" required min="1">
 
 <button type="submit">Ajouter</button>
 
 </form>
 
 </div>
-</main>
 
-<?php include "../includes/footer.php"; ?>
+<script>
+
+function checkArticle(){
+
+let select = document.getElementById("designation");
+let fields = document.getElementById("newArticleFields");
+
+if(select.value === "new"){
+fields.style.display = "block";
+}else{
+fields.style.display = "none";
+}
+
+}
+
+</script>
+
+</body>
+</html>
