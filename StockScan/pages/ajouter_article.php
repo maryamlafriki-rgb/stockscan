@@ -18,7 +18,47 @@ body{
 background: linear-gradient(135deg,#0f172a,#1e3a5f);
 color:white;
 font-family: Arial;
+margin:0;
 }
+
+/* HAMBURGER */
+
+.hamburger{
+font-size:28px;
+cursor:pointer;
+padding:15px;
+position:fixed;
+top:10px;
+left:15px;
+z-index:1001;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+position:fixed;
+left:-250px;
+top:0;
+width:250px;
+height:100%;
+background:#111;
+padding-top:60px;
+transition:0.3s;
+z-index:1000;
+}
+
+.sidebar a{
+display:block;
+color:white;
+padding:15px;
+text-decoration:none;
+}
+
+.sidebar a:hover{
+background:#0d6efd;
+}
+
+/* FORM */
 
 .add-article-container{
 max-width:500px;
@@ -51,6 +91,21 @@ border-radius:6px;
 </head>
 
 <body>
+
+<!-- HAMBURGER -->
+<span class="hamburger" onclick="toggleSidebar()">☰</span>
+
+<!-- SIDEBAR -->
+<div id="sidebar" class="sidebar">
+
+<a href="dashboard.php">Accueil</a>
+<a href="articles.php">Articles</a>
+<a href="tableau_de_bord.php">Tableau de bord</a>
+<a href="ajouter_article.php">Ajouter Article</a>
+<a href="login.php">Déconnexion</a>
+
+</div>
+
 
 <div class="add-article-container">
 
@@ -93,6 +148,18 @@ border-radius:6px;
 </div>
 
 <script>
+
+function toggleSidebar(){
+
+let sidebar = document.getElementById("sidebar");
+
+if(sidebar.style.left === "0px"){
+sidebar.style.left = "-250px";
+}else{
+sidebar.style.left = "0px";
+}
+
+}
 
 function checkArticle(){
 
